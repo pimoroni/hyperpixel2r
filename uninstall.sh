@@ -1,24 +1,23 @@
 #!/bin/bash
 
-SERVICE_NAME="hyperpixel4-init.service"
+SERVICE_NAME="hyperpixel2r-init.service"
 SERVICE_PATH="/etc/systemd/system"
-BINARY_NAME="hyperpixel4-init"
-ROTATE_NAME="hyperpixel4-rotate"
+BINARY_NAME="hyperpixel2r-init"
+ROTATE_NAME="hyperpixel2r-rotate"
 BINARY_PATH="/usr/bin"
 OVERLAY_PATH="/boot/overlays"
-OVERLAY_NAME="hyperpixel4.dtbo"
-OVERLAY_SRC="hyperpixel4.dts"
+OVERLAY_NAME="hyperpixel2r.dtbo"
+OVERLAY_SRC="hyperpixel2r-overlay.dts"
 
 CONFIG="/boot/config.txt"
 
 CONFIG_LINES=(
-	"dtoverlay=hyperpixel4"
-	"gpio=0-25=a2"
+	"dtoverlay=hyperpixel2r"
 	"enable_dpi_lcd=1"
 	"dpi_group=2"
 	"dpi_mode=87"
 	"dpi_output_format=0x7f216"
-	"dpi_timings=480 0 10 16 59 800 0 15 113 15 0 0 0 60 0 32000000 6"
+	"dpi_timings=480 0 10 16 55 480 0 15 60 15 0 0 0 60 0 19200000 6"
 )
 
 if [ $(id -u) -ne 0 ]; then

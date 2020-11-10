@@ -45,15 +45,15 @@
             /* needed to avoid dtc warning */
             #address-cells = <1>;
             #size-cells = <0>;
-            ft6236: ft6236@14 {
-                compatible = "goodix,gt911";
-                reg = <0x14>;
+            ft6236: ft6236@15 {
+                compatible = "edt,edt-ft5406", "edt,edt-ft5x06";
+                reg = <0x15>;
                 interrupt-parent = <&gpio>;
                 interrupts = <27 2>;
                 touchscreen-size-x = <480>;
-                touchscreen-size-y = <800>;
+                touchscreen-size-y = <480>;
                 touchscreen-x-mm = <51>;
-                touchscreen-y-mm = <85>;
+                touchscreen-y-mm = <51>;
             };
         };
     };

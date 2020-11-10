@@ -1,0 +1,412 @@
+#!/usr/bin/env python
+
+# For some reason this script needs to be run twice - needs some debugging...
+
+
+# Backlight on BCM19:
+# gpio write 24 0
+# gpio write 24 1
+
+# config.txt:
+
+# dtoverlay=hyperpixel4
+# overscan_left=0
+# overscan_right=0
+# overscan_top=0
+# overscan_bottom=0
+# enable_dpi_lcd=1
+# display_default_lcd=1
+# display_rotate=0
+# dpi_group=2
+# dpi_mode=87
+# dpi_output_format=0x7f216
+
+# hdmi_timings=480 0 10 16 55 480 0 15 60 15 0 0 0 60 0 19200000 6
+
+import RPi.GPIO as GPIO
+import time
+
+
+CLK = 11
+MOSI = 10
+CS = 18
+DELAY = 0.0001
+
+
+def setupSpiPins(clkPin, mosiPin, csPin):
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.setup(clkPin, GPIO.OUT)
+    GPIO.output(clkPin, GPIO.LOW)
+    GPIO.setup(mosiPin, GPIO.OUT)
+    GPIO.setup(csPin, GPIO.OUT, initial=GPIO.HIGH)
+
+
+def sendBits(data, numBits=8, csPin=CS, clkPin=CLK, mosiPin=MOSI):
+    # print("{:09b}".format(data))
+    data <<= (9 - numBits)
+
+    for bit in range(numBits):
+        # Set RPi's output bit high or low depending on highest bit of data field
+        GPIO.output(mosiPin, GPIO.HIGH if data & 0x100 else GPIO.LOW)
+
+        # Advance data to the next bit
+        data <<= 1
+
+        # Pulse the clock pin HIGH then immediately low
+        time.sleep(DELAY)
+        GPIO.output(clkPin, GPIO.HIGH)
+        time.sleep(DELAY)
+        GPIO.output(clkPin, GPIO.LOW)
+
+    GPIO.output(mosiPin, GPIO.LOW)  # 00 is NOP, so set data pin low to make sure read operations don't cause weirdness
+
+
+def SPI_Write(output):
+    sendBits(output, 9, CS, CLK, MOSI)
+
+
+def SPI_WriteComm(b):
+    SPI_Write(b)
+
+
+def SPI_WriteData(b):
+    SPI_Write(b | 0x100)
+
+
+def Delay(ms):
+    time.sleep(ms / 1000.0)
+
+# BCM 2 = vsync, sync spike high
+# BCM 3 = hsync, sync spike high
+# BCM 0 = DPI clock
+# BCM 1 = display enable, enabled when high
+
+
+# DPI_OUTPUT_FORMAT = 0x6f016
+# 6 = DPI_OUTPUT_FORMAT_18BIT_666_CFG2
+# 1 = DPI_RGB_ORDER_RGB
+# 0 = output_enable_mode, invert_pixel_clock are default
+# f = hsync_disable, vsync_disable, output_enable_disable are all 1???
+# 6 = hsync_polarity=0, vsync_polarity=1, output_enable_polarity=1
+
+# 7 = hsync_polarity=1, vsync_polarity=1, output_enable_polarity=1
+
+# R2 = BCM 20 = gpio mode 28 down
+# R3 = BCM 21 = wpi 29
+# R4 = BCM 22 = wpi 3
+# R5 = BCM 23 = wpi 4
+# R6 = BCM 24 = wpi 5
+# R7 = BCM 25 = wpi 6
+
+
+def setup_hp2_round(CLK, MOSI, CS):
+    # #****************************************************************************//
+    # #****************************** Page 1 Command ******************************//
+    # #****************************************************************************//
+    GPIO.output(CS, GPIO.LOW)
+
+    # ST7701S:
+    # HW_Reset()         # VBP>=11, VFP>=7
+
+    SPI_WriteComm(0x01)  # Niko added reset
+
+    Delay(120)
+
+    SPI_WriteComm(0xFF)
+    SPI_WriteData(0x77)
+    SPI_WriteData(0x01)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x10)
+
+    SPI_WriteComm(0xC0)
+    SPI_WriteData(0x3B)  # Scan line
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xC1)
+    SPI_WriteData(0x0B)  # VBP
+    SPI_WriteData(0x02)
+
+    SPI_WriteComm(0xC2)
+    SPI_WriteData(0x00)  # 07 OR 00
+    SPI_WriteData(0x02)
+
+    SPI_WriteComm(0xCC)
+    SPI_WriteData(0x10)
+
+    SPI_WriteComm(0xCD)  # RGB format COLCTRL
+    SPI_WriteData(0x08)
+    # SPI_WriteData(0x00)
+
+    # Gamma option A:
+    # SPI_WriteComm(0xB0) # IPS
+    # SPI_WriteData(0x00) # 255
+    # SPI_WriteData(0x11) # 251
+    # SPI_WriteData(0x16) # 247  down
+    # SPI_WriteData(0x0e) # 239
+    # SPI_WriteData(0x11) # 231
+    # SPI_WriteData(0x06) # 203
+    # SPI_WriteData(0x05) # 175
+    # SPI_WriteData(0x09) # 147
+    # SPI_WriteData(0x08) # 108
+    # SPI_WriteData(0x21) # 80
+    # SPI_WriteData(0x06) # 52
+    # SPI_WriteData(0x13) # 24
+    # SPI_WriteData(0x10) # 16
+    # SPI_WriteData(0x29) # 8    down
+    # SPI_WriteData(0x31) # 4
+    # SPI_WriteData(0x18) # 0
+
+    # SPI_WriteComm(0xB1)#  IPS
+    # SPI_WriteData(0x00)#  255
+    # SPI_WriteData(0x11)#  251
+    # SPI_WriteData(0x16)#  247   down
+    # SPI_WriteData(0x0e)#  239
+    # SPI_WriteData(0x11)#  231
+    # SPI_WriteData(0x07)#  203
+    # SPI_WriteData(0x05)#  175
+    # SPI_WriteData(0x09)#  147
+    # SPI_WriteData(0x09)#  108
+    # SPI_WriteData(0x21)#  80
+    # SPI_WriteData(0x05)#  52
+    # SPI_WriteData(0x13)#  24
+    # SPI_WriteData(0x11)#  16
+    # SPI_WriteData(0x2a)#  8  down
+    # SPI_WriteData(0x31)#  4
+    # SPI_WriteData(0x18)#  0
+
+    # Gamma option B:
+    SPI_WriteComm(0xB0)  # Positive Voltage Gamma Control
+    SPI_WriteData(0x02)
+    SPI_WriteData(0x13)
+    SPI_WriteData(0x1B)
+    SPI_WriteData(0x0D)
+    SPI_WriteData(0x10)
+    SPI_WriteData(0x05)
+    SPI_WriteData(0x08)
+    SPI_WriteData(0x07)
+    SPI_WriteData(0x07)
+    SPI_WriteData(0x24)
+    SPI_WriteData(0x04)
+    SPI_WriteData(0x11)
+    SPI_WriteData(0x0E)
+    SPI_WriteData(0x2C)
+    SPI_WriteData(0x33)
+    SPI_WriteData(0x1D)
+
+    SPI_WriteComm(0xB1)  # Negative Voltage Gamma Control
+    SPI_WriteData(0x05)
+    SPI_WriteData(0x13)
+    SPI_WriteData(0x1B)
+    SPI_WriteData(0x0D)
+    SPI_WriteData(0x11)
+    SPI_WriteData(0x05)
+    SPI_WriteData(0x08)
+    SPI_WriteData(0x07)
+    SPI_WriteData(0x07)
+    SPI_WriteData(0x24)
+    SPI_WriteData(0x04)
+    SPI_WriteData(0x11)
+    SPI_WriteData(0x0E)
+    SPI_WriteData(0x2C)
+    SPI_WriteData(0x33)
+    SPI_WriteData(0x1D)
+
+    SPI_WriteComm(0xFF)
+    SPI_WriteData(0x77)
+    SPI_WriteData(0x01)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x11)
+
+    SPI_WriteComm(0xB0)  # VOP  3.5375+ *x 0.0125
+    SPI_WriteData(0x5D)  # 6D OR 5D
+
+    SPI_WriteComm(0xB1)  # VCOM amplitude setting
+    SPI_WriteData(0x43)  # 37 OR 43
+
+    SPI_WriteComm(0xB2)  # VGH Voltage setting
+    SPI_WriteData(0x81)  # 12V
+
+    SPI_WriteComm(0xB3)
+    SPI_WriteData(0x80)
+
+    SPI_WriteComm(0xB5)  # VGL Voltage setting
+    SPI_WriteData(0x43)  # -8.3V
+
+    SPI_WriteComm(0xB7)
+    SPI_WriteData(0x85)
+
+    SPI_WriteComm(0xB8)
+    SPI_WriteData(0x20)
+
+    SPI_WriteComm(0xC1)
+    SPI_WriteData(0x78)
+
+    SPI_WriteComm(0xC2)
+    SPI_WriteData(0x78)
+
+    SPI_WriteComm(0xD0)
+    SPI_WriteData(0x88)
+
+    SPI_WriteComm(0xE0)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x02)
+
+    SPI_WriteComm(0xE1)
+    SPI_WriteData(0x03)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x04)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x20)
+    SPI_WriteData(0x20)
+
+    SPI_WriteComm(0xE2)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xE3)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x11)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xE4)
+    SPI_WriteData(0x22)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xE5)
+    SPI_WriteData(0x05)
+    SPI_WriteData(0xEC)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0x07)
+    SPI_WriteData(0xEE)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xE6)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x11)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xE7)
+    SPI_WriteData(0x22)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xE8)
+    SPI_WriteData(0x06)
+    SPI_WriteData(0xED)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0x08)
+    SPI_WriteData(0xEF)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xEB)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x40)
+    SPI_WriteData(0x40)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0xED)
+    SPI_WriteData(0xFF)
+    SPI_WriteData(0xFF)
+    SPI_WriteData(0xFF)
+    SPI_WriteData(0xBA)
+    SPI_WriteData(0x0A)
+    SPI_WriteData(0xBF)
+    SPI_WriteData(0x45)
+    SPI_WriteData(0xFF)
+    SPI_WriteData(0xFF)
+    SPI_WriteData(0x54)
+    SPI_WriteData(0xFB)
+    SPI_WriteData(0xA0)
+    SPI_WriteData(0xAB)
+    SPI_WriteData(0xFF)
+    SPI_WriteData(0xFF)
+    SPI_WriteData(0xFF)
+
+    SPI_WriteComm(0xEF)
+    SPI_WriteData(0x10)
+    SPI_WriteData(0x0D)
+    SPI_WriteData(0x04)
+    SPI_WriteData(0x08)
+    SPI_WriteData(0x3F)
+    SPI_WriteData(0x1F)
+
+    SPI_WriteComm(0xFF)
+    SPI_WriteData(0x77)
+    SPI_WriteData(0x01)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x13)
+
+    SPI_WriteComm(0xEF)
+    SPI_WriteData(0x08)
+
+    SPI_WriteComm(0xFF)
+    SPI_WriteData(0x77)
+    SPI_WriteData(0x01)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+    SPI_WriteData(0x00)
+
+    SPI_WriteComm(0x11)
+
+    Delay(120)
+
+    SPI_WriteComm(0x29)
+
+    SPI_WriteComm(0x36)
+    SPI_WriteData(0x08)
+
+    SPI_WriteComm(0x3A)
+    SPI_WriteData(0x66)  # 70 OR 66
+
+    GPIO.output(CS, GPIO.HIGH)
+
+
+if __name__ == '__main__':
+    setupSpiPins(CLK, MOSI, CS)
+
+    setup_hp2_round(CLK, MOSI, CS)
