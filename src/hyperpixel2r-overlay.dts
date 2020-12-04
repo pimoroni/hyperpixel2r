@@ -25,59 +25,21 @@
             };
         };
     };
-    fragment@2 {
+    fragment@3 {
         target-path = "/";
         __overlay__ {
             i2c_gpio: i2c@0 {
                 compatible = "i2c-gpio";
-                gpios = <&gpio 10 0 /* sda */
-                     &gpio 11 0 /* scl */
+                gpios = <&gpio 10 0
+                     &gpio 11 0
                     >;
-                i2c-gpio,delay-us = <4>;        /* ~100 kHz */
+                i2c-gpio,delay-us = <4>;
                 #address-cells = <1>;
                 #size-cells = <0>;
             };
         };
     };
-    fragment@3 {
-        target = <&i2c_gpio>;
-        __overlay__ {
-            /* needed to avoid dtc warning */
-            #address-cells = <1>;
-            #size-cells = <0>;
-            ft6236: ft6236@15 {
-                compatible = "edt,edt-ft5406", "edt,edt-ft5x06";
-                reg = <0x15>;
-                interrupt-parent = <&gpio>;
-                interrupts = <27 2>;
-                touchscreen-size-x = <480>;
-                touchscreen-size-y = <480>;
-                touchscreen-x-mm = <51>;
-                touchscreen-y-mm = <51>;
-            };
-        };
-    };
-    fragment@4 {
-        target = <&ft6236>;
-        __dormant__ {
-            touchscreen-inverted-x;
-        };
-    };
-    fragment@5 {
-        target = <&ft6236>;
-        __overlay__ {
-            touchscreen-inverted-y;
-        };
-    };
-    fragment@6 {
-        target = <&ft6236>;
-        __overlay__ {
-            touchscreen-swapped-x-y;
-        };
-    };
     __overrides__ {
-        touchscreen-inverted-x = <0>,"+4";
-        touchscreen-inverted-y = <0>,"-5";
-        touchscreen-swapped-x-y = <0>,"-6";
-    };
+        disable-i2c = <0>,"-3";
+    }
 };
