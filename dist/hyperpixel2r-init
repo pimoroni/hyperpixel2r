@@ -30,7 +30,7 @@ import time
 CLK = 11
 MOSI = 10
 CS = 18
-DELAY = 0.0001
+DELAY = 0.00001
 
 
 def setupSpiPins(clkPin, mosiPin, csPin):
@@ -111,7 +111,7 @@ def setup_hp2_round(CLK, MOSI, CS):
 
     SPI_WriteComm(0x01)  # Niko added reset
 
-    Delay(120)
+    Delay(240)
 
     SPI_WriteComm(0xFF)
     SPI_WriteData(0x77)
@@ -134,10 +134,6 @@ def setup_hp2_round(CLK, MOSI, CS):
 
     SPI_WriteComm(0xCC)
     SPI_WriteData(0x10)
-
-    SPI_WriteComm(0xCD)  # RGB format COLCTRL
-    SPI_WriteData(0x08)
-    # SPI_WriteData(0x00)
 
     # Gamma option A:
     # SPI_WriteComm(0xB0) # IPS
@@ -391,17 +387,21 @@ def setup_hp2_round(CLK, MOSI, CS):
     SPI_WriteData(0x00)
     SPI_WriteData(0x00)
 
-    SPI_WriteComm(0x11)
+    SPI_WriteComm(0xCD)  # RGB format COLCTRL
+    SPI_WriteData(0x08)
+    # SPI_WriteData(0x00)
 
+    SPI_WriteComm(0x36) # MadCtl
+    SPI_WriteData(0x08)
+
+    SPI_WriteComm(0x3A)  # Colmod
+    SPI_WriteData(0x66)
+
+    SPI_WriteComm(0x11)
     Delay(120)
 
     SPI_WriteComm(0x29)
-
-    SPI_WriteComm(0x36)
-    SPI_WriteData(0x08)
-
-    SPI_WriteComm(0x3A)
-    SPI_WriteData(0x66)  # 70 OR 66
+    Delay(20)
 
     GPIO.output(CS, GPIO.HIGH)
 
