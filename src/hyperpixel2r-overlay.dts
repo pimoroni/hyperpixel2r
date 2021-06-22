@@ -41,5 +41,5 @@
     };
     __overrides__ {
         disable-i2c = <0>,"-3";
-    }
+    };
 };
