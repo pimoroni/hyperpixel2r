@@ -9,6 +9,3 @@ test:
 
 remove:
 	dtoverlay -r hyperpixel2r
-
-init:
-	gcc -o ../dist/hyperpixel2r-init -static hyperpixel2r-init.c -lgpiod
