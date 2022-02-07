@@ -1,11 +1,11 @@
 build:
-	dtc -I dts -O dtb -Wno-unit_address_vs_reg -o hyperpixel4.dtbo hyperpixel4.dts
+	dtc -I dts -O dtb -Wno-unit_address_vs_reg -o hyperpixel2r.dtbo hyperpixel2r-overlay.dts
 
 install:
-	cp hyperpixel4.dtbo /boot/overlays/
+	cp hyperpixel2r.dtbo /boot/overlays/
 
 test:
-	dtoverlay hyperpixel4.dtbo
+	dtoverlay hyperpixel2r.dtbo
 
-init:
-	gcc -o ../dist/hyperpixel2r-init -static hyperpixel2r-init.c -lgpiod
+remove:
+	dtoverlay -r hyperpixel2r

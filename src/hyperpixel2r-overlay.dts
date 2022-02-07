@@ -39,7 +39,25 @@
             };
         };
     };
+    fragment@4 {
+        target = <&i2c_gpio>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            touch: edt-ft5x06@15 {
+                compatible = "edt,edt-ft5x06";
+                reg = <0x15>;
+                interrupt-parent = <&gpio>;
+                interrupts = <27 2>;
+                touchscreen-size-x = <480>;
+                touchscreen-size-y = <480>;
+                touchscreen-x-mm = <50>;
+                touchscreen-y-mm = <50>;
+            };
+        };
+    };
     __overrides__ {
-        disable-i2c = <0>,"-3";
+        disable-i2c = <0>,"-3,-4";
+        disable-touch = <0>,"-4";
     };
 };
